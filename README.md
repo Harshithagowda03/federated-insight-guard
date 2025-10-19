@@ -1,4 +1,15 @@
-# Welcome to your Lovable project
+# FedSecure AI
+
+A full-stack web application for adaptive threat detection using deep learning and federated learning. This React dashboard interfaces with a Python Flask backend for AI-powered security operations.
+
+## Features
+
+- 🛡️ **Real-time Threat Detection**: Monitor and analyze security threats in real-time
+- 🤖 **Federated Learning**: Distributed model training across multiple nodes
+- 📊 **Threat Analytics**: Visualize threat patterns and trends
+- 🎯 **Attack Simulator**: Test AI models with simulated attack scenarios (GANs)
+- 📤 **Data Upload**: Upload training data (CSV, JSON, PCAP, LOG files)
+- 📈 **Performance Metrics**: Detailed model performance visualization
 
 ## Project info
 
@@ -52,13 +63,110 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This project is built with:
+### Frontend
+- React 18 with TypeScript
+- Tailwind CSS for styling
+- Recharts for data visualization
+- shadcn/ui component library
+- Vite for build tooling
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Backend (To be implemented)
+- Python Flask REST API
+- Deep Learning frameworks (TensorFlow/PyTorch)
+- Federated Learning implementation
+- GAN-based attack generation
+
+## Connecting Your Flask Backend
+
+The frontend uses the API service layer located in `src/services/api.ts`. Here are the required Flask endpoints:
+
+### API Endpoints
+
+#### Federated Learning
+- `POST /api/federated/train` - Start training round
+- `GET /api/federated/status` - Get training status
+- `GET /api/federated/nodes` - Get node information
+- `POST /api/federated/pause` - Pause training
+
+#### Threat Analytics
+- `GET /api/threats/timeline?hours=24` - Get threat timeline
+- `GET /api/threats/distribution` - Get threat distribution
+- `GET /api/threats/top` - Get top threat types
+- `GET /api/threats/recent?limit=10` - Get recent threats
+
+#### Attack Simulator
+- `POST /api/simulator/run` - Run attack simulation
+- `GET /api/simulator/results/:id` - Get simulation results
+- `GET /api/simulator/attack-types` - Get available attack types
+
+#### Data Upload
+- `POST /api/data/upload` - Upload training data (multipart/form-data)
+- `GET /api/data/upload/:id` - Get upload status
+- `GET /api/data/stats` - Get processed data stats
+
+#### Performance Metrics
+- `GET /api/metrics/accuracy` - Get accuracy metrics
+- `GET /api/metrics/loss` - Get loss metrics
+- `GET /api/metrics/classification` - Get classification metrics
+- `GET /api/metrics/comparison` - Get model comparison
+
+#### Dashboard
+- `GET /api/dashboard/stats` - Get dashboard statistics
+- `GET /api/dashboard/status` - Get system status
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+## Docker Deployment
+
+### Frontend Dockerfile
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 8080
+CMD ["npm", "run", "preview"]
+```
+
+### Backend Dockerfile (Example)
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_URL=http://backend:5000/api
+    depends_on:
+      - backend
+  
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+```
 
 ## How can I deploy this project?
 
