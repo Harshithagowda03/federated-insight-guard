@@ -15,14 +15,26 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated Background Effects */}
+      <div className="fixed inset-0 bg-circuit-pattern opacity-30 pointer-events-none"></div>
+      <div className="fixed top-20 left-20 w-96 h-96 bg-gradient-primary rounded-full blur-3xl opacity-20 animate-float pointer-events-none"></div>
+      <div className="fixed bottom-20 right-20 w-96 h-96 bg-gradient-accent rounded-full blur-3xl opacity-20 animate-float pointer-events-none" style={{ animationDelay: "3s" }}></div>
+      <div className="fixed top-1/2 left-1/2 w-64 h-64 bg-gradient-primary rounded-full blur-3xl opacity-10 animate-pulse-glow pointer-events-none"></div>
+
+      {/* Header with Glassmorphism */}
+      <header className="glass-strong border-b relative z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-primary" />
+              <div className="relative">
+                <Shield className="h-8 w-8 text-primary relative z-10" />
+                <div className="absolute inset-0 bg-primary blur-lg opacity-50 animate-pulse-glow"></div>
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">FedSecure AI</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient">
+                  FedSecure AI
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   Adaptive Threat Detection with Federated Learning
                 </p>
@@ -30,7 +42,7 @@ const Index = () => {
             </div>
             <Button 
               onClick={() => navigate("/auth")}
-              className="gap-2 shadow-lg shadow-primary/20"
+              className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
             >
               <LogIn className="w-4 h-4" />
               Login
@@ -39,30 +51,31 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-6">
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-6 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
-            <TabsTrigger value="overview" className="gap-2">
+          <TabsList className="glass-strong grid w-full grid-cols-6 lg:w-auto border-gradient">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="federated" className="gap-2">
+            <TabsTrigger value="federated" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Database className="h-4 w-4" />
               <span className="hidden sm:inline">Federated</span>
             </TabsTrigger>
-            <TabsTrigger value="threats" className="gap-2">
+            <TabsTrigger value="threats" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Threats</span>
             </TabsTrigger>
-            <TabsTrigger value="simulator" className="gap-2">
+            <TabsTrigger value="simulator" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Target className="h-4 w-4" />
               <span className="hidden sm:inline">Simulator</span>
             </TabsTrigger>
-            <TabsTrigger value="upload" className="gap-2">
+            <TabsTrigger value="upload" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <FileUp className="h-4 w-4" />
               <span className="hidden sm:inline">Upload</span>
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="gap-2">
+            <TabsTrigger value="metrics" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">Metrics</span>
             </TabsTrigger>

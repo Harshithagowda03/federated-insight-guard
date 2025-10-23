@@ -28,21 +28,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background effects */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      <div className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
+      <div className="absolute inset-0 bg-circuit-pattern opacity-30"></div>
+      <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-primary rounded-full blur-3xl opacity-30 animate-float"></div>
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-accent rounded-full blur-3xl opacity-30 animate-float" style={{ animationDelay: "3s" }}></div>
+      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-primary rounded-full blur-3xl opacity-20 animate-pulse-glow"></div>
       
-      <Card className="w-full max-w-md relative z-10 bg-card/80 backdrop-blur-xl border-primary/20 shadow-2xl">
+      <Card className="w-full max-w-md relative z-10 glass-strong border-gradient shadow-2xl glow-primary">
         <div className="p-8">
           {/* Logo and Header */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 shadow-lg shadow-primary/50">
-              <Shield className="w-8 h-8 text-primary-foreground" />
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mb-4 animate-pulse-glow">
+              <Shield className="w-8 h-8 text-white relative z-10" />
+              <div className="absolute inset-0 bg-primary blur-xl opacity-50"></div>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-2">
-              SecureAI Platform
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2 animate-gradient">
+              FedSecure AI
             </h1>
             <p className="text-muted-foreground text-sm">
               {isLogin ? "Welcome back! Please login to continue" : "Create your account to get started"}
@@ -139,9 +141,9 @@ const Auth = () => {
 
             <Button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 group"
+              className="w-full h-12 bg-gradient-primary hover:opacity-90 glow-primary border-none shadow-lg transition-all duration-300 group"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 text-white">
                 {isLogin ? "Login to Dashboard" : "Create Account"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
