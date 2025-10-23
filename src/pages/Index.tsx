@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Activity, Database, Zap, FileUp, Target } from "lucide-react";
+import { Shield, Activity, Database, Zap, FileUp, Target, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import FederatedLearning from "@/components/dashboard/FederatedLearning";
 import ThreatAnalytics from "@/components/dashboard/ThreatAnalytics";
@@ -10,19 +12,29 @@ import PerformanceMetrics from "@/components/dashboard/PerformanceMetrics";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">FedSecure AI</h1>
-              <p className="text-sm text-muted-foreground">
-                Adaptive Threat Detection with Federated Learning
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">FedSecure AI</h1>
+                <p className="text-sm text-muted-foreground">
+                  Adaptive Threat Detection with Federated Learning
+                </p>
+              </div>
             </div>
+            <Button 
+              onClick={() => navigate("/auth")}
+              className="gap-2 shadow-lg shadow-primary/20"
+            >
+              <LogIn className="w-4 h-4" />
+              Login
+            </Button>
           </div>
         </div>
       </header>
