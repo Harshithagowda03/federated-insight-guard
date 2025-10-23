@@ -1,7 +1,40 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import ThreatAlert from "./ThreatAlert";
+import { useToast } from "@/hooks/use-toast";
 
 const ThreatAnalytics = () => {
+  const [alerts, setAlerts] = useState([
+    {
+      id: 1,
+      type: "critical" as const,
+      title: "Critical DDoS Attack Detected",
+      description: "A sophisticated distributed denial-of-service attack is targeting your infrastructure from multiple IP addresses. Our AI has automatically activated defense protocols.",
+      source: "FedSecure AI Detection Engine",
+      timestamp: "2 minutes ago",
+    },
+    {
+      id: 2,
+      type: "high" as const,
+      title: "SQL Injection Attempt Blocked",
+      description: "Multiple SQL injection attempts were detected and neutralized. The attacker was trying to access your user database through a vulnerable endpoint.",
+      source: "Web Application Firewall",
+      timestamp: "15 minutes ago",
+    },
+  ]);
+  const { toast } = useToast();
+
+  const handleTakeAction = (alertId: number) => {
+    toast({
+      title: "Security Action Initiated",
+      description: "Automated response protocols have been deployed. Your security team has been notified.",
+    });
+  };
+
+  const handleDismiss = (alertId: number) => {
+    setAlerts(alerts.filter(alert => alert.id !== alertId));
+  };
   const threatTrend = [
     { time: "00:00", threats: 12 },
     { time: "04:00", threats: 8 },
@@ -29,14 +62,41 @@ const ThreatAnalytics = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Threat Analytics</h2>
-        <p className="text-muted-foreground">Real-time threat detection and analysis</p>
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          Threat Analytics
+        </h2>
+        <p className="text-muted-foreground">Real-time threat detection and analysis powered by AI</p>
       </div>
 
+      {/* Active Threat Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <span className="inline-flex h-2 w-2 rounded-full bg-destructive animate-pulse"></span>
+            Active Threat Alerts
+          </h3>
+          {alerts.map((alert) => (
+            <ThreatAlert
+              key={alert.id}
+              type={alert.type}
+              title={alert.title}
+              description={alert.description}
+              source={alert.source}
+              timestamp={alert.timestamp}
+              onTakeAction={() => handleTakeAction(alert.id)}
+              onDismiss={() => handleDismiss(alert.id)}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="glass-strong border-gradient">
           <CardHeader>
-            <CardTitle>Threat Timeline</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-primary">●</span>
+              Threat Timeline
+            </CardTitle>
             <CardDescription>24-hour threat detection trend</CardDescription>
           </CardHeader>
           <CardContent>
@@ -64,9 +124,12 @@ const ThreatAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-strong border-gradient">
           <CardHeader>
-            <CardTitle>Threat Distribution</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-secondary">●</span>
+              Threat Distribution
+            </CardTitle>
             <CardDescription>By severity level</CardDescription>
           </CardHeader>
           <CardContent>
@@ -99,9 +162,12 @@ const ThreatAnalytics = () => {
         </Card>
       </div>
 
-      <Card>
+      <Card className="glass-strong border-gradient">
         <CardHeader>
-          <CardTitle>Top Threat Types</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <span className="text-accent">●</span>
+            Top Threat Types
+          </CardTitle>
           <CardDescription>Most common attack patterns detected</CardDescription>
         </CardHeader>
         <CardContent>
