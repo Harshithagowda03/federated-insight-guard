@@ -13,6 +13,9 @@ const ThreatAnalytics = () => {
       description: "A sophisticated distributed denial-of-service attack is targeting your infrastructure from multiple IP addresses. Our AI has automatically activated defense protocols.",
       source: "FedSecure AI Detection Engine",
       timestamp: "2 minutes ago",
+      userName: "Security Team",
+      location: "Main Server",
+      recommendedAction: "Activate DDoS protection and monitor traffic patterns",
     },
     {
       id: 2,
@@ -21,6 +24,9 @@ const ThreatAnalytics = () => {
       description: "Multiple SQL injection attempts were detected and neutralized. The attacker was trying to access your user database through a vulnerable endpoint.",
       source: "Web Application Firewall",
       timestamp: "15 minutes ago",
+      userName: "Admin User",
+      location: "Database Server",
+      recommendedAction: "Review security logs and patch vulnerable endpoints",
     },
   ]);
   const { toast } = useToast();
@@ -83,6 +89,9 @@ const ThreatAnalytics = () => {
               description={alert.description}
               source={alert.source}
               timestamp={alert.timestamp}
+              userName={alert.userName}
+              location={alert.location}
+              recommendedAction={alert.recommendedAction}
               onTakeAction={() => handleTakeAction(alert.id)}
               onDismiss={() => handleDismiss(alert.id)}
             />

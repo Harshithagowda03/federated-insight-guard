@@ -1,7 +1,10 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, XCircle, Info, Copy, MessageCircle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { generateThreatMessages } from "@/utils/threatMessageGenerator";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface ThreatAlertProps {
   type: "critical" | "high" | "medium" | "low" | "info";
@@ -9,6 +12,9 @@ interface ThreatAlertProps {
   description: string;
   source?: string;
   timestamp?: string;
+  userName?: string;
+  location?: string;
+  recommendedAction?: string;
   onTakeAction?: () => void;
   onDismiss?: () => void;
   className?: string;
@@ -20,10 +26,32 @@ const ThreatAlert = ({
   description,
   source,
   timestamp,
+  userName = "User",
+  location,
+  recommendedAction,
   onTakeAction,
   onDismiss,
   className,
 }: ThreatAlertProps) => {
+  const { toast } = useToast();
+  const [showMessages, setShowMessages] = useState(false);
+
+  const messages = generateThreatMessages({
+    type: title,
+    location,
+    time: timestamp || new Date().toLocaleTimeString(),
+    severity: type,
+    userName,
+    action: recommendedAction,
+  });
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied! 💕",
+      description: `${label} message copied to clipboard`,
+    });
+  };
   const getTypeConfig = () => {
     switch (type) {
       case "critical":
@@ -120,8 +148,8 @@ const ThreatAlert = ({
             </div>
           )}
 
-          {onTakeAction && (
-            <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
+            {onTakeAction && (
               <Button
                 size="sm"
                 onClick={onTakeAction}
@@ -129,9 +157,76 @@ const ThreatAlert = ({
               >
                 Take Action
               </Button>
-              <Button variant="outline" size="sm" onClick={onDismiss}>
-                View Details
-              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowMessages(!showMessages)}
+              className="gap-2"
+            >
+              <MessageCircle className="h-3 w-3" />
+              {showMessages ? "Hide" : "Show"} Messages
+            </Button>
+          </div>
+
+          {showMessages && (
+            <div className="mt-4 space-y-3 pt-3 border-t border-border/50">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <Smartphone className="h-3 w-3" />
+                    SMS Message
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(messages.sms, "SMS")}
+                    className="h-6 px-2"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-xs bg-background/50 p-2 rounded-md">{messages.sms}</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Push Notification
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(`${messages.pushTitle}\n${messages.pushBody}`, "Push")}
+                    className="h-6 px-2"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="text-xs bg-background/50 p-2 rounded-md space-y-1">
+                  <p className="font-semibold">{messages.pushTitle}</p>
+                  <p>{messages.pushBody}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    <MessageCircle className="h-3 w-3" />
+                    WhatsApp Message
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(messages.whatsapp, "WhatsApp")}
+                    className="h-6 px-2"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-xs bg-background/50 p-2 rounded-md">{messages.whatsapp}</p>
+              </div>
             </div>
           )}
         </div>
