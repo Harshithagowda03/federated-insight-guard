@@ -12,6 +12,7 @@ interface GeneratedMessages {
   pushTitle: string;
   pushBody: string;
   whatsapp: string;
+  freeSendOptions: string[];
 }
 
 const severityEmojis = {
@@ -53,10 +54,17 @@ export const generateThreatMessages = (details: ThreatDetails): GeneratedMessage
   
   const whatsapp = `Hi ${details.userName} 🌼 — we noticed a ${details.type.toLowerCase()}${locationText} at ${details.time}.${actionText} Stay calm, you're safe with us. ${ending}`;
   
+  // Free send options
+  const freeSendOptions = [
+    "Use your carrier's email-to-SMS gateway (e.g., phonenumber@carrier.com) to send via email.",
+    "Send manually via WhatsApp Web or Telegram by copying the message and pasting to your contact."
+  ];
+  
   return {
     sms: sms.substring(0, 160), // Ensure SMS is under 160 chars
     pushTitle,
     pushBody,
     whatsapp,
+    freeSendOptions,
   };
 };

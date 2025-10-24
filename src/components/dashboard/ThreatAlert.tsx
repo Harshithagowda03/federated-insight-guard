@@ -227,6 +227,20 @@ const ThreatAlert = ({
                 </div>
                 <p className="text-xs bg-background/50 p-2 rounded-md">{messages.whatsapp}</p>
               </div>
+
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <Smartphone className="h-3 w-3" />
+                  Free Send Options 💕
+                </span>
+                <div className="space-y-1">
+                  {messages.freeSendOptions.map((option, index) => (
+                    <p key={index} className="text-xs text-muted-foreground pl-3">
+                      {index + 1}) {option}
+                    </p>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
