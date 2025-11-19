@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Activity, Database, Zap, FileUp, Target, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { BackendStatusBadge } from "@/components/BackendStatusBadge";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import FederatedLearning from "@/components/dashboard/FederatedLearning";
 import ThreatAnalytics from "@/components/dashboard/ThreatAnalytics";
@@ -40,13 +41,16 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate("/auth")}
-              className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
-            >
-              <LogIn className="w-4 h-4" />
-              Login
-            </Button>
+            <div className="flex items-center gap-3">
+              <BackendStatusBadge />
+              <Button 
+                onClick={() => navigate("/auth")}
+                className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
+              >
+                <LogIn className="w-4 h-4" />
+                Login
+              </Button>
+            </div>
           </div>
         </div>
       </header>
