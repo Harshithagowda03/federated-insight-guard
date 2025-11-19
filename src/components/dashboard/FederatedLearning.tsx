@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Pause, RotateCcw, Server } from "lucide-react";
+import { Play, Pause, RotateCcw, Server, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
+import { pythonApi } from "@/services/pythonApi";
+import { usePythonBackend } from "@/hooks/usePythonBackend";
 
 const FederatedLearning = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [roundId, setRoundId] = useState<string | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const { connected: backendConnected } = usePythonBackend();
 
   const nodes = [
     { id: 1, name: "Node Alpha", status: "active", accuracy: 92.5, samples: 15000 },
@@ -17,22 +24,60 @@ const FederatedLearning = () => {
     { id: 4, name: "Node Delta", status: "idle", accuracy: 93.2, samples: 16200 },
   ];
 
-  const handleStartTraining = () => {
-    setIsTraining(true);
-    toast.success("Federated training started");
-    
-    // Simulate training progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsTraining(false);
-          toast.success("Training round completed");
-          return 100;
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    if (!roundId || !isTraining) return;
+
+    const ws = pythonApi.connectToTraining(
+      roundId,
+      (data) => {
+        setWsConnected(true);
+        
+        if (data.progress !== undefined) {
+          setProgress(data.progress);
         }
-        return prev + 5;
+        if (data.current_round !== undefined) {
+          setCurrentRound(data.current_round);
+        }
+        if (data.accuracy !== undefined) {
+          setAccuracy(data.accuracy);
+        }
+        if (data.status === 'completed') {
+          setIsTraining(false);
+          toast.success(`Training Complete - ${(data.accuracy * 100).toFixed(2)}% accuracy`);
+        }
+      },
+      () => {
+        setWsConnected(false);
+      }
+    );
+
+    return () => {
+      ws.close();
+      setWsConnected(false);
+    };
+  }, [roundId, isTraining]);
+
+  const handleStartTraining = async () => {
+    if (!backendConnected) {
+      toast.error("Backend Offline - Python backend is not available");
+      return;
+    }
+
+    try {
+      setIsTraining(true);
+      const response = await pythonApi.startTraining({
+        participant_ids: ['node1', 'node2', 'node3'],
+        max_rounds: 10,
+        target_accuracy: 0.95,
       });
-    }, 500);
+
+      setRoundId(response.round_id);
+      toast.success(response.message);
+    } catch (error) {
+      setIsTraining(false);
+      toast.error(error instanceof Error ? error.message : "Failed to start training");
+    }
   };
 
   const handlePauseTraining = () => {
@@ -42,7 +87,10 @@ const FederatedLearning = () => {
 
   const handleResetTraining = () => {
     setProgress(0);
+    setCurrentRound(0);
+    setAccuracy(0);
     setIsTraining(false);
+    setRoundId(null);
     toast.info("Training reset");
   };
 
@@ -55,14 +103,29 @@ const FederatedLearning = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Training Control</CardTitle>
-          <CardDescription>Manage federated learning rounds</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Training Control</CardTitle>
+              <CardDescription>Manage federated learning rounds</CardDescription>
+            </div>
+            {wsConnected ? (
+              <Badge variant="default" className="flex items-center gap-1">
+                <Wifi className="h-3 w-3" />
+                Live
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <WifiOff className="h-3 w-3" />
+                Offline
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Button 
               onClick={handleStartTraining} 
-              disabled={isTraining}
+              disabled={isTraining || !backendConnected}
               className="gap-2"
             >
               <Play className="h-4 w-4" />
@@ -98,7 +161,7 @@ const FederatedLearning = () => {
           <div className="grid grid-cols-3 gap-4 pt-2">
             <div>
               <p className="text-sm text-muted-foreground">Current Round</p>
-              <p className="text-2xl font-bold">8</p>
+              <p className="text-2xl font-bold">{currentRound}/10</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Samples</p>
@@ -106,7 +169,7 @@ const FederatedLearning = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Global Accuracy</p>
-              <p className="text-2xl font-bold">94.2%</p>
+              <p className="text-2xl font-bold">{(accuracy * 100).toFixed(1)}%</p>
             </div>
           </div>
         </CardContent>
