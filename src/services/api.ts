@@ -1,7 +1,9 @@
 // API service layer for connecting to Flask backend
 // Replace BASE_URL with your Flask backend URL
 
-const BASE_URL = process.env.VITE_API_URL || "http://localhost:5000/api";
+import { supabase } from "@/integrations/supabase/client";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface ApiResponse<T> {
   data?: T;
@@ -9,16 +11,33 @@ interface ApiResponse<T> {
   status: number;
 }
 
-// Generic API call handler
+// Get current user session for authenticated API calls
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session?.access_token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+  
+  return {
+    "Authorization": `Bearer ${session.access_token}`,
+  };
+}
+
+// Generic API call handler with authentication
 async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
+    // Get auth headers - will throw if not authenticated
+    const authHeaders = await getAuthHeaders();
+    
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
         ...options.headers,
       },
     });
@@ -92,12 +111,16 @@ export const attackSimulatorApi = {
 export const dataUploadApi = {
   // Upload training data
   uploadData: async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
+      // Get auth headers first
+      const authHeaders = await getAuthHeaders();
+      
+      const formData = new FormData();
+      formData.append("file", file);
+
       const response = await fetch(`${BASE_URL}/data/upload`, {
         method: "POST",
+        headers: authHeaders,
         body: formData,
       });
 

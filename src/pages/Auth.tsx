@@ -7,12 +7,14 @@ import { Shield, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { authSchema, loginSchema } from "@/lib/validations";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading, signIn, signUp } = useAuth();
@@ -24,8 +26,38 @@ const Auth = () => {
     }
   }, [user, loading, navigate]);
 
+  // Clear validation errors when switching modes
+  useEffect(() => {
+    setValidationErrors({});
+  }, [isLogin]);
+
+  const validateForm = (): boolean => {
+    const schema = isLogin ? loginSchema : authSchema;
+    const result = schema.safeParse({ email, password });
+    
+    if (!result.success) {
+      const errors: { email?: string; password?: string } = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as "email" | "password";
+        if (!errors[field]) {
+          errors[field] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      return false;
+    }
+    
+    setValidationErrors({});
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -44,16 +76,6 @@ const Auth = () => {
           });
         }
       } else {
-        if (password.length < 6) {
-          toast({
-            title: "Signup Failed",
-            description: "Password must be at least 6 characters",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
         const { error } = await signUp(email, password);
         if (error) {
           let errorMessage = error.message;
@@ -153,11 +175,21 @@ const Auth = () => {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (validationErrors.email) {
+                    setValidationErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
                 required
                 disabled={isSubmitting}
-                className="bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30"
+                className={`bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30 ${
+                  validationErrors.email ? "border-destructive" : ""
+                }`}
               />
+              {validationErrors.email && (
+                <p className="text-xs text-destructive">{validationErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -170,15 +202,24 @@ const Auth = () => {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (validationErrors.password) {
+                    setValidationErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
                 required
                 disabled={isSubmitting}
-                minLength={6}
-                className="bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30"
+                className={`bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30 ${
+                  validationErrors.password ? "border-destructive" : ""
+                }`}
               />
-              {!isLogin && (
+              {validationErrors.password && (
+                <p className="text-xs text-destructive">{validationErrors.password}</p>
+              )}
+              {!isLogin && !validationErrors.password && (
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 6 characters
+                  Min 8 chars, 1 uppercase, 1 number, 1 special character
                 </p>
               )}
             </div>
