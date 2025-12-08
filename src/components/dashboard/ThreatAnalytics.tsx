@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import ThreatAlert from "./ThreatAlert";
 import { useToast } from "@/hooks/use-toast";
+import { ATTACK_TYPES, SEVERITY_COLORS, getAttackById } from "@/config/attackTypes";
 
 const ThreatAnalytics = () => {
   const [alerts, setAlerts] = useState([
@@ -50,19 +51,26 @@ const ThreatAnalytics = () => {
     { time: "20:00", threats: 19 },
   ];
 
+  // Generate threat types data from centralized config
   const threatTypes = [
-    { name: "DDoS", count: 87, severity: "high" },
-    { name: "SQL Injection", count: 64, severity: "high" },
-    { name: "XSS", count: 42, severity: "medium" },
-    { name: "Port Scan", count: 31, severity: "low" },
-    { name: "Brute Force", count: 23, severity: "medium" },
+    { name: getAttackById("ddos").label, count: 87, color: getAttackById("ddos").color },
+    { name: getAttackById("sql-injection").label, count: 64, color: getAttackById("sql-injection").color },
+    { name: getAttackById("xss").label, count: 42, color: getAttackById("xss").color },
+    { name: getAttackById("port-scan").label, count: 31, color: getAttackById("port-scan").color },
+    { name: getAttackById("brute-force").label, count: 23, color: getAttackById("brute-force").color },
+    // New attack types with simulated data
+    { name: getAttackById("dns-tunneling").label, count: 18, color: getAttackById("dns-tunneling").color },
+    { name: getAttackById("arp-spoofing").label, count: 12, color: getAttackById("arp-spoofing").color },
+    { name: getAttackById("mitm-attack").label, count: 9, color: getAttackById("mitm-attack").color },
+    { name: getAttackById("data-exfiltration").label, count: 7, color: getAttackById("data-exfiltration").color },
+    { name: getAttackById("insider-misuse").label, count: 5, color: getAttackById("insider-misuse").color },
   ];
 
   const threatDistribution = [
-    { name: "Critical", value: 15, color: "#ef4444" },
-    { name: "High", value: 35, color: "#f97316" },
-    { name: "Medium", value: 28, color: "#eab308" },
-    { name: "Low", value: 22, color: "#22c55e" },
+    { name: "Critical", value: 15, color: SEVERITY_COLORS.critical },
+    { name: "High", value: 35, color: SEVERITY_COLORS.high },
+    { name: "Medium", value: 28, color: SEVERITY_COLORS.medium },
+    { name: "Low", value: 22, color: SEVERITY_COLORS.low },
   ];
 
   return (
@@ -192,7 +200,11 @@ const ThreatAnalytics = () => {
                   borderRadius: "var(--radius)",
                 }}
               />
-              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                {threatTypes.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
