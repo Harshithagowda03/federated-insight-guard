@@ -1,31 +1,95 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Shield, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Shield, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading, signIn, signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    toast({
-      title: isLogin ? "Login Successful" : "Signup Successful",
-      description: `Welcome ${isLogin ? "back" : "to SecureAI"}!`,
-    });
-    
-    // Simulate successful auth and redirect to dashboard
-    setTimeout(() => navigate("/"), 1500);
+    setIsSubmitting(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast({
+            title: "Login Failed",
+            description: error.message || "Invalid email or password",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+        }
+      } else {
+        if (password.length < 6) {
+          toast({
+            title: "Signup Failed",
+            description: "Password must be at least 6 characters",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        const { error } = await signUp(email, password);
+        if (error) {
+          let errorMessage = error.message;
+          if (error.message.includes("already registered")) {
+            errorMessage = "This email is already registered. Please login instead.";
+          }
+          toast({
+            title: "Signup Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Signup Successful",
+            description: "Welcome to FedSecure AI!",
+          });
+        }
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -60,6 +124,7 @@ const Auth = () => {
                 isLogin ? "shadow-lg shadow-primary/30" : ""
               }`}
               onClick={() => setIsLogin(true)}
+              disabled={isSubmitting}
             >
               Login
             </Button>
@@ -70,6 +135,7 @@ const Auth = () => {
                 !isLogin ? "shadow-lg shadow-primary/30" : ""
               }`}
               onClick={() => setIsLogin(false)}
+              disabled={isSubmitting}
             >
               Sign Up
             </Button>
@@ -77,24 +143,6 @@ const Auth = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {!isLogin && (
-              <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="name" className="text-foreground/90 flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary" />
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30"
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground/90 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
@@ -107,6 +155,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isSubmitting}
                 className="bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30"
               />
             </div>
@@ -123,29 +172,34 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isSubmitting}
+                minLength={6}
                 className="bg-background/50 border-primary/20 focus:border-primary/50 transition-all duration-300 hover:border-primary/30"
               />
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 6 characters
+                </p>
+              )}
             </div>
-
-            {isLogin && (
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-primary/20" />
-                  <span className="text-muted-foreground">Remember me</span>
-                </label>
-                <a href="#" className="text-primary hover:text-primary/80 transition-colors">
-                  Forgot password?
-                </a>
-              </div>
-            )}
 
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="w-full h-12 bg-gradient-primary hover:opacity-90 glow-primary border-none shadow-lg transition-all duration-300 group"
             >
               <span className="flex items-center gap-2 text-white">
-                {isLogin ? "Login to Dashboard" : "Create Account"}
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {isLogin ? "Logging in..." : "Creating account..."}
+                  </>
+                ) : (
+                  <>
+                    {isLogin ? "Login to Dashboard" : "Create Account"}
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </span>
             </Button>
           </form>
@@ -158,6 +212,7 @@ const Auth = () => {
                 <button
                   onClick={() => setIsLogin(false)}
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
+                  disabled={isSubmitting}
                 >
                   Sign up now
                 </button>
@@ -168,6 +223,7 @@ const Auth = () => {
                 <button
                   onClick={() => setIsLogin(true)}
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
+                  disabled={isSubmitting}
                 >
                   Login here
                 </button>
