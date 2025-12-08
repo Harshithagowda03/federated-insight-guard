@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Activity, Database, Zap, FileUp, Target, LogIn } from "lucide-react";
+import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { BackendStatusBadge } from "@/components/BackendStatusBadge";
@@ -10,6 +10,7 @@ import ThreatAnalytics from "@/components/dashboard/ThreatAnalytics";
 import AttackSimulator from "@/components/dashboard/AttackSimulator";
 import DataUpload from "@/components/dashboard/DataUpload";
 import PerformanceMetrics from "@/components/dashboard/PerformanceMetrics";
+import RealtimeDetection from "@/components/dashboard/RealtimeDetection";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -58,10 +59,14 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-6 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="glass-strong grid w-full grid-cols-6 lg:w-auto border-gradient">
+          <TabsList className="glass-strong grid w-full grid-cols-7 lg:w-auto border-gradient">
             <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="realtime" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
+              <Radio className="h-4 w-4" />
+              <span className="hidden sm:inline">Live</span>
             </TabsTrigger>
             <TabsTrigger value="federated" className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white">
               <Database className="h-4 w-4" />
@@ -87,6 +92,10 @@ const Index = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <DashboardOverview />
+          </TabsContent>
+
+          <TabsContent value="realtime" className="space-y-6">
+            <RealtimeDetection />
           </TabsContent>
 
           <TabsContent value="federated" className="space-y-6">
