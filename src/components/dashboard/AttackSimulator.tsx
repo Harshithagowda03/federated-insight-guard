@@ -7,20 +7,13 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Zap, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ATTACK_TYPES, getAttackById } from "@/config/attackTypes";
 
 const AttackSimulator = () => {
   const [attackType, setAttackType] = useState("");
   const [intensity, setIntensity] = useState([50]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [results, setResults] = useState<any>(null);
-
-  const attackTypes = [
-    { value: "ddos", label: "DDoS Attack", description: "Distributed Denial of Service" },
-    { value: "sql-injection", label: "SQL Injection", description: "Database manipulation attack" },
-    { value: "xss", label: "Cross-Site Scripting", description: "JavaScript injection" },
-    { value: "gan-evasion", label: "GAN Evasion", description: "Adversarial ML attack" },
-    { value: "brute-force", label: "Brute Force", description: "Password cracking" },
-  ];
 
   const handleSimulate = () => {
     if (!attackType) {
@@ -37,11 +30,13 @@ const AttackSimulator = () => {
       const detectionTime = (Math.random() * 500 + 100).toFixed(0);
       const confidence = (Math.random() * 30 + 70).toFixed(1);
 
+      const attack = getAttackById(attackType);
       setResults({
         detected,
         detectionTime,
         confidence,
-        attackType: attackTypes.find(a => a.value === attackType)?.label,
+        attackType: attack.label,
+        attackId: attackType,
         timestamp: new Date().toISOString(),
       });
 
@@ -76,14 +71,20 @@ const AttackSimulator = () => {
                   <SelectValue placeholder="Select attack type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {attackTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div>
-                        <div className="font-medium">{type.label}</div>
-                        <div className="text-xs text-muted-foreground">{type.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {ATTACK_TYPES.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <SelectItem key={type.id} value={type.id}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" style={{ color: type.color }} />
+                          <div>
+                            <div className="font-medium">{type.label}</div>
+                            <div className="text-xs text-muted-foreground">{type.description}</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
