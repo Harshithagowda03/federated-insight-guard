@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, Radio } from "lucide-react";
+import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, LogOut, Radio, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { BackendStatusBadge } from "@/components/BackendStatusBadge";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import FederatedLearning from "@/components/dashboard/FederatedLearning";
 import ThreatAnalytics from "@/components/dashboard/ThreatAnalytics";
@@ -15,6 +16,23 @@ import RealtimeDetection from "@/components/dashboard/RealtimeDetection";
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
+
+  const handleAuthAction = async () => {
+    if (user) {
+      await signOut();
+    } else {
+      navigate("/auth");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -44,12 +62,26 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-3">
               <BackendStatusBadge />
+              {user && (
+                <span className="text-sm text-muted-foreground hidden sm:inline">
+                  {user.email}
+                </span>
+              )}
               <Button 
-                onClick={() => navigate("/auth")}
+                onClick={handleAuthAction}
                 className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
               >
-                <LogIn className="w-4 h-4" />
-                Login
+                {user ? (
+                  <>
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    Login
+                  </>
+                )}
               </Button>
             </div>
           </div>
