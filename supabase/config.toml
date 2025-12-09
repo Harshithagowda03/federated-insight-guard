@@ -1,1 +1,4 @@
 project_id = "vsmpmrfasiawafktbgva"
+
+[functions.federated-training]
+verify_jwt = false

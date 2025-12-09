@@ -3,96 +3,61 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Pause, RotateCcw, Server, Wifi, WifiOff } from "lucide-react";
-import { toast } from "sonner";
-import { pythonApi } from "@/services/pythonApi";
-import { usePythonBackend } from "@/hooks/usePythonBackend";
+import { Play, Pause, RotateCcw, Server, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { useFederatedTraining, FederatedNode } from "@/hooks/useFederatedTraining";
 
 const FederatedLearning = () => {
-  const [isTraining, setIsTraining] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentRound, setCurrentRound] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
-  const [roundId, setRoundId] = useState<string | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
-  const { connected: backendConnected } = usePythonBackend();
+  const {
+    isConnected,
+    isLoading,
+    isTraining,
+    error,
+    session,
+    startTraining,
+    pauseTraining,
+    resumeTraining,
+    resetTraining,
+    fetchNodes,
+    checkHealth,
+  } = useFederatedTraining();
 
-  const nodes = [
-    { id: 1, name: "Node Alpha", status: "active", accuracy: 92.5, samples: 15000 },
-    { id: 2, name: "Node Beta", status: "active", accuracy: 94.1, samples: 18500 },
-    { id: 3, name: "Node Gamma", status: "syncing", accuracy: 91.8, samples: 12000 },
-    { id: 4, name: "Node Delta", status: "idle", accuracy: 93.2, samples: 16200 },
-  ];
+  const [nodes, setNodes] = useState<FederatedNode[]>([
+    { id: 'node1', name: 'Node Alpha', status: 'idle', accuracy: 0.925, samples: 15000, contribution: 0 },
+    { id: 'node2', name: 'Node Beta', status: 'idle', accuracy: 0.941, samples: 18500, contribution: 0 },
+    { id: 'node3', name: 'Node Gamma', status: 'idle', accuracy: 0.918, samples: 12000, contribution: 0 },
+    { id: 'node4', name: 'Node Delta', status: 'idle', accuracy: 0.932, samples: 16200, contribution: 0 },
+  ]);
 
-  // WebSocket connection for real-time updates
+  // Update nodes from session or fetch them
   useEffect(() => {
-    if (!roundId || !isTraining) return;
-
-    const ws = pythonApi.connectToTraining(
-      roundId,
-      (data) => {
-        setWsConnected(true);
-        
-        if (data.progress !== undefined) {
-          setProgress(data.progress);
+    if (session?.nodes) {
+      setNodes(session.nodes);
+    } else if (isConnected && !isTraining) {
+      fetchNodes().then(fetchedNodes => {
+        if (fetchedNodes.length > 0) {
+          setNodes(fetchedNodes);
         }
-        if (data.current_round !== undefined) {
-          setCurrentRound(data.current_round);
-        }
-        if (data.accuracy !== undefined) {
-          setAccuracy(data.accuracy);
-        }
-        if (data.status === 'completed') {
-          setIsTraining(false);
-          toast.success(`Training Complete - ${(data.accuracy * 100).toFixed(2)}% accuracy`);
-        }
-      },
-      () => {
-        setWsConnected(false);
-      }
-    );
-
-    return () => {
-      ws.close();
-      setWsConnected(false);
-    };
-  }, [roundId, isTraining]);
+      });
+    }
+  }, [session?.nodes, isConnected, isTraining, fetchNodes]);
 
   const handleStartTraining = async () => {
-    if (!backendConnected) {
-      toast.error("Backend Offline - Python backend is not available");
-      return;
-    }
+    await startTraining(10);
+  };
 
-    try {
-      setIsTraining(true);
-      const response = await pythonApi.startTraining({
-        participant_ids: ['node1', 'node2', 'node3'],
-        max_rounds: 10,
-        target_accuracy: 0.95,
-      });
-
-      setRoundId(response.round_id);
-      toast.success(response.message);
-    } catch (error) {
-      setIsTraining(false);
-      toast.error(error instanceof Error ? error.message : "Failed to start training");
+  const handlePauseResume = () => {
+    if (session?.status === 'paused') {
+      resumeTraining();
+    } else {
+      pauseTraining();
     }
   };
 
-  const handlePauseTraining = () => {
-    setIsTraining(false);
-    toast.info("Training paused");
-  };
-
-  const handleResetTraining = () => {
-    setProgress(0);
-    setCurrentRound(0);
-    setAccuracy(0);
-    setIsTraining(false);
-    setRoundId(null);
-    toast.info("Training reset");
-  };
+  const progress = session ? (session.current_round / session.max_rounds) * 100 : 0;
+  const currentRound = session?.current_round || 0;
+  const maxRounds = session?.max_rounds || 10;
+  const totalSamples = session?.total_samples || nodes.reduce((sum, n) => sum + n.samples, 0);
+  const globalAccuracy = session?.accuracy || 0;
 
   return (
     <div className="space-y-6">
@@ -108,40 +73,57 @@ const FederatedLearning = () => {
               <CardTitle>Training Control</CardTitle>
               <CardDescription>Manage federated learning rounds</CardDescription>
             </div>
-            {wsConnected ? (
-              <Badge variant="default" className="flex items-center gap-1">
-                <Wifi className="h-3 w-3" />
-                Live
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <WifiOff className="h-3 w-3" />
-                Offline
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {isLoading ? (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Connecting...
+                </Badge>
+              ) : isConnected ? (
+                <Badge variant="default" className="flex items-center gap-1">
+                  <Wifi className="h-3 w-3" />
+                  Connected
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="destructive" 
+                  className="flex items-center gap-1 cursor-pointer"
+                  onClick={checkHealth}
+                >
+                  <WifiOff className="h-3 w-3" />
+                  Offline - Click to retry
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && !isConnected && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}. Please make sure you're logged in and try again.
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button 
               onClick={handleStartTraining} 
-              disabled={isTraining || !backendConnected}
+              disabled={isTraining || !isConnected || isLoading}
               className="gap-2"
             >
               <Play className="h-4 w-4" />
               Start Training
             </Button>
             <Button 
-              onClick={handlePauseTraining} 
-              disabled={!isTraining}
+              onClick={handlePauseResume} 
+              disabled={!isTraining && session?.status !== 'paused'}
               variant="secondary"
               className="gap-2"
             >
               <Pause className="h-4 w-4" />
-              Pause
+              {session?.status === 'paused' ? 'Resume' : 'Pause'}
             </Button>
             <Button 
-              onClick={handleResetTraining}
+              onClick={resetTraining}
               variant="outline"
               className="gap-2"
             >
@@ -153,23 +135,33 @@ const FederatedLearning = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Training Progress</span>
-              <span className="font-medium">{progress}%</span>
+              <span className="font-medium">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} />
+            {session?.status === 'completed' && (
+              <p className="text-sm text-green-600 dark:text-green-400">
+                ✓ Training completed successfully
+              </p>
+            )}
+            {session?.status === 'paused' && (
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                ⏸ Training paused
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 pt-2">
             <div>
               <p className="text-sm text-muted-foreground">Current Round</p>
-              <p className="text-2xl font-bold">{currentRound}/10</p>
+              <p className="text-2xl font-bold">{currentRound}/{maxRounds}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Samples</p>
-              <p className="text-2xl font-bold">61.7K</p>
+              <p className="text-2xl font-bold">{(totalSamples / 1000).toFixed(1)}K</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Global Accuracy</p>
-              <p className="text-2xl font-bold">{(accuracy * 100).toFixed(1)}%</p>
+              <p className="text-2xl font-bold">{(globalAccuracy * 100).toFixed(1)}%</p>
             </div>
           </div>
         </CardContent>
@@ -197,7 +189,7 @@ const FederatedLearning = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Accuracy</p>
-                    <p className="font-semibold">{node.accuracy}%</p>
+                    <p className="font-semibold">{(node.accuracy * 100).toFixed(1)}%</p>
                   </div>
                   <Badge
                     variant={
