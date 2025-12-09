@@ -6,26 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// In-memory training state (for demo purposes)
-const trainingSessions = new Map<string, {
-  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed';
-  current_round: number;
-  max_rounds: number;
-  accuracy: number;
-  loss: number;
-  total_samples: number;
-  nodes: Array<{
-    id: string;
-    name: string;
-    status: 'active' | 'syncing' | 'idle' | 'offline';
-    accuracy: number;
-    samples: number;
-    contribution: number;
-  }>;
-  started_at: string;
-  updated_at: string;
-}>();
-
 // Simulate federated nodes
 const generateNodes = () => [
   { id: 'node1', name: 'Node Alpha', status: 'active' as const, accuracy: 0.925, samples: 15000, contribution: 0 },
@@ -34,10 +14,10 @@ const generateNodes = () => [
   { id: 'node4', name: 'Node Delta', status: 'idle' as const, accuracy: 0.932, samples: 16200, contribution: 0 },
 ];
 
-// Simulate training progress for a round
-const simulateRoundProgress = (session: any, roundNumber: number) => {
-  // Randomly update node statuses
-  session.nodes = session.nodes.map((node: any) => {
+// Simulate training progress for a round (pure function - no state mutation)
+const simulateRoundProgress = (currentRound: number, maxRounds: number, nodes: any[]) => {
+  // Update node statuses with some randomness
+  const updatedNodes = nodes.map((node: any) => {
     const rand = Math.random();
     let newStatus = node.status;
     if (rand < 0.7) newStatus = 'active';
@@ -56,21 +36,22 @@ const simulateRoundProgress = (session: any, roundNumber: number) => {
     };
   });
 
-  // Calculate global accuracy as weighted average of node accuracies
-  const totalSamples = session.nodes.reduce((sum: number, n: any) => sum + n.samples, 0);
-  const weightedAccuracy = session.nodes.reduce((sum: number, n: any) => {
-    return sum + (n.accuracy * n.samples / totalSamples);
-  }, 0);
-
+  // Calculate totals
+  const totalSamples = updatedNodes.reduce((sum: number, n: any) => sum + n.samples, 0);
+  
   // Simulate gradual improvement
-  const baseAccuracy = 0.85 + (roundNumber / session.max_rounds) * 0.12;
-  session.accuracy = Math.min(0.98, baseAccuracy + (Math.random() * 0.02 - 0.01));
-  session.loss = Math.max(0.02, 0.5 - (roundNumber / session.max_rounds) * 0.45 + (Math.random() * 0.05));
-  session.current_round = roundNumber;
-  session.total_samples = totalSamples;
-  session.updated_at = new Date().toISOString();
+  const nextRound = currentRound + 1;
+  const accuracy = Math.min(0.98, 0.85 + (nextRound / maxRounds) * 0.12 + (Math.random() * 0.02 - 0.01));
+  const loss = Math.max(0.02, 0.5 - (nextRound / maxRounds) * 0.45 + (Math.random() * 0.05));
 
-  return session;
+  return {
+    current_round: nextRound,
+    accuracy,
+    loss,
+    total_samples: totalSamples,
+    nodes: updatedNodes,
+    status: nextRound >= maxRounds ? 'completed' : 'running',
+  };
 };
 
 serve(async (req) => {
@@ -110,7 +91,7 @@ serve(async (req) => {
       );
     }
 
-    // Start training
+    // Start training - returns initial session state to be managed client-side
     if (action === 'start' && req.method === 'POST') {
       const body = await req.json();
       const { max_rounds = 10 } = body;
@@ -128,8 +109,6 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       };
       
-      trainingSessions.set(roundId, session);
-      
       console.log(`Training started: ${roundId} with ${max_rounds} rounds`);
       
       return new Response(
@@ -143,35 +122,10 @@ serve(async (req) => {
       );
     }
 
-    // Get training status
-    if (action === 'status') {
-      const roundId = url.searchParams.get('round_id');
-      
-      if (!roundId) {
-        return new Response(
-          JSON.stringify({ error: 'round_id is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const session = trainingSessions.get(roundId);
-      if (!session) {
-        return new Response(
-          JSON.stringify({ error: 'Training session not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ round_id: roundId, ...session }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Advance training by one round
+    // Advance training - client sends current state, server computes next state
     if (action === 'advance' && req.method === 'POST') {
       const body = await req.json();
-      const { round_id } = body;
+      const { round_id, current_round, max_rounds, nodes, is_paused } = body;
       
       if (!round_id) {
         return new Response(
@@ -180,57 +134,61 @@ serve(async (req) => {
         );
       }
 
-      const session = trainingSessions.get(round_id);
-      if (!session) {
+      // If paused, return current state without advancing
+      if (is_paused) {
         return new Response(
-          JSON.stringify({ error: 'Training session not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (session.status === 'paused') {
-        return new Response(
-          JSON.stringify({ round_id, ...session, message: 'Training is paused' }),
+          JSON.stringify({ 
+            round_id, 
+            status: 'paused',
+            current_round,
+            max_rounds,
+            nodes,
+            message: 'Training is paused' 
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      if (session.current_round >= session.max_rounds) {
-        session.status = 'completed';
+      // Check if already completed
+      if (current_round >= max_rounds) {
         return new Response(
-          JSON.stringify({ round_id, ...session }),
+          JSON.stringify({ 
+            round_id, 
+            status: 'completed',
+            current_round,
+            max_rounds,
+            nodes,
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       // Simulate next round
-      const updatedSession = simulateRoundProgress(session, session.current_round + 1);
+      const progress = simulateRoundProgress(
+        current_round || 0, 
+        max_rounds || 10, 
+        nodes || generateNodes()
+      );
       
-      if (updatedSession.current_round >= updatedSession.max_rounds) {
-        updatedSession.status = 'completed';
-      }
-
-      trainingSessions.set(round_id, updatedSession);
-      
-      console.log(`Training advanced: ${round_id} - Round ${updatedSession.current_round}/${updatedSession.max_rounds}`);
+      console.log(`Training advanced: ${round_id} - Round ${progress.current_round}/${max_rounds}`);
       
       return new Response(
-        JSON.stringify({ round_id, ...updatedSession }),
+        JSON.stringify({ 
+          round_id, 
+          max_rounds,
+          updated_at: new Date().toISOString(),
+          ...progress 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Pause training
+    // Pause training - just acknowledge (state managed client-side)
     if (action === 'pause' && req.method === 'POST') {
       const body = await req.json();
       const { round_id } = body;
       
-      const session = trainingSessions.get(round_id);
-      if (session) {
-        session.status = 'paused';
-        session.updated_at = new Date().toISOString();
-        trainingSessions.set(round_id, session);
-      }
+      console.log(`Training paused: ${round_id}`);
       
       return new Response(
         JSON.stringify({ status: 'paused', round_id }),
@@ -238,17 +196,12 @@ serve(async (req) => {
       );
     }
 
-    // Resume training
+    // Resume training - just acknowledge (state managed client-side)
     if (action === 'resume' && req.method === 'POST') {
       const body = await req.json();
       const { round_id } = body;
       
-      const session = trainingSessions.get(round_id);
-      if (session && session.status === 'paused') {
-        session.status = 'running';
-        session.updated_at = new Date().toISOString();
-        trainingSessions.set(round_id, session);
-      }
+      console.log(`Training resumed: ${round_id}`);
       
       return new Response(
         JSON.stringify({ status: 'running', round_id }),
@@ -258,19 +211,6 @@ serve(async (req) => {
 
     // Get nodes status
     if (action === 'nodes') {
-      const roundId = url.searchParams.get('round_id');
-      
-      if (roundId) {
-        const session = trainingSessions.get(roundId);
-        if (session) {
-          return new Response(
-            JSON.stringify({ nodes: session.nodes }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      }
-      
-      // Return default nodes if no active session
       return new Response(
         JSON.stringify({ nodes: generateNodes() }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

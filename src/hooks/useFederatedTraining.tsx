@@ -131,23 +131,29 @@ export const useFederatedTraining = () => {
     }
   }, []);
 
-  // Advance training (poll for next round)
+  // Advance training (poll for next round) - sends current state since edge functions are stateless
   const advanceTraining = useCallback(async () => {
-    if (!state.roundId || !state.isTraining) return;
+    if (!state.roundId || !state.isTraining || !state.session) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession) return;
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/federated-training?action=advance`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${authSession.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ round_id: state.roundId }),
+          body: JSON.stringify({ 
+            round_id: state.roundId,
+            current_round: state.session.current_round,
+            max_rounds: state.session.max_rounds,
+            nodes: state.session.nodes,
+            is_paused: state.session.status === 'paused',
+          }),
         }
       );
 
@@ -177,7 +183,7 @@ export const useFederatedTraining = () => {
     } catch (error) {
       console.error('Failed to advance training:', error);
     }
-  }, [state.roundId, state.isTraining]);
+  }, [state.roundId, state.isTraining, state.session]);
 
   // Pause training
   const pauseTraining = useCallback(async () => {
