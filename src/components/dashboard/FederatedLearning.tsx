@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Play, Pause, RotateCcw, Server, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useFederatedTraining, FederatedNode } from "@/hooks/useFederatedTraining";
+import { useAuth } from "@/hooks/useAuth";
+import TrainingWelcome from "./TrainingWelcome";
 
 const FederatedLearning = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const {
     isConnected,
     isLoading,
@@ -58,6 +64,27 @@ const FederatedLearning = () => {
   const maxRounds = session?.max_rounds || 10;
   const totalSamples = session?.total_samples || nodes.reduce((sum, n) => sum + n.samples, 0);
   const globalAccuracy = session?.accuracy || 0;
+
+  // Show friendly welcome screen when not training and not connected
+  const showWelcome = !isTraining && !session && !isLoading;
+
+  if (showWelcome) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Federated Learning</h2>
+          <p className="text-muted-foreground">Distributed model training across nodes</p>
+        </div>
+        <TrainingWelcome
+          isAuthenticated={!!user && isConnected}
+          nodes={nodes}
+          onStartTraining={handleStartTraining}
+          onLogin={() => navigate('/auth')}
+          isLoading={isLoading}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
