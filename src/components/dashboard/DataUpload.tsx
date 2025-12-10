@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileUp, Check, X } from "lucide-react";
+import { FileUp, Check, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { validateFiles, formatFileSize, MAX_FILE_SIZE, ALLOWED_EXTENSIONS } from "@/lib/fileValidation";
 
 interface UploadedFile {
   name: string;
@@ -18,18 +18,30 @@ const DataUpload = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
-    if (!selectedFiles) return;
+    if (!selectedFiles || selectedFiles.length === 0) return;
 
-    const newFiles: UploadedFile[] = Array.from(selectedFiles).map(file => ({
+    // Validate files before processing
+    const { validFiles, errors } = validateFiles(selectedFiles);
+
+    // Show validation errors
+    if (errors.length > 0) {
+      errors.forEach(error => toast.error(error));
+    }
+
+    if (validFiles.length === 0) {
+      return;
+    }
+
+    const newFiles: UploadedFile[] = validFiles.map(file => ({
       name: file.name,
       size: file.size,
       status: "processing" as const,
     }));
 
     setFiles(prev => [...prev, ...newFiles]);
-    toast.info(`Uploading ${selectedFiles.length} file(s)...`);
+    toast.info(`Validating and uploading ${validFiles.length} file(s)...`);
 
-    // Simulate processing
+    // Simulate server-side processing (in production, this would call an Edge Function)
     newFiles.forEach((file, index) => {
       setTimeout(() => {
         setFiles(prev => prev.map(f => 
@@ -49,12 +61,9 @@ const DataUpload = () => {
         }
       }, 1500 * (index + 1));
     });
-  };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    // Reset input to allow re-uploading the same file
+    e.target.value = '';
   };
 
   return (
@@ -91,7 +100,7 @@ const DataUpload = () => {
                   accept=".csv,.json,.pcap,.log"
                 />
                 <p className="text-xs text-muted-foreground">
-                  CSV, JSON, PCAP or LOG files up to 50MB
+                  {ALLOWED_EXTENSIONS.join(', ').toUpperCase()} files up to {MAX_FILE_SIZE / (1024 * 1024)}MB
                 </p>
               </div>
             </div>

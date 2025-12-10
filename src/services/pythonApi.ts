@@ -37,7 +37,8 @@ class PythonAPIService {
 
   constructor() {
     this.baseUrl = PYTHON_API_URL;
-    this.token = localStorage.getItem('python_api_token');
+    // Token is now managed in-memory only, not persisted to localStorage
+    this.token = null;
   }
 
   private getHeaders(includeAuth: boolean = true): HeadersInit {
@@ -71,8 +72,8 @@ class PythonAPIService {
     }
 
     const data = await response.json();
+    // Store token in memory only - not in localStorage to prevent XSS access
     this.token = data.access_token;
-    localStorage.setItem('python_api_token', data.access_token);
     return data;
   }
 
@@ -91,8 +92,8 @@ class PythonAPIService {
   }
 
   logout() {
+    // Clear in-memory token only
     this.token = null;
-    localStorage.removeItem('python_api_token');
   }
 
   // Training endpoints
