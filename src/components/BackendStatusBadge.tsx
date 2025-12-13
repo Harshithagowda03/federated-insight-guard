@@ -1,56 +1,119 @@
+/**
+ * FedSecure AI - Backend Status Badge Component
+ * 
+ * Displays real-time connection status to Python Flask backend.
+ * Shows online/offline state with visual indicator and tooltip details.
+ * 
+ * @author FedSecure AI Team
+ */
+
 import { Badge } from '@/components/ui/badge';
-import { Server, AlertCircle, Loader2 } from 'lucide-react';
-import { usePythonBackend } from '@/hooks/usePythonBackend';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Server, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useBackendConnection } from '@/hooks/useBackendConnection';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 export const BackendStatusBadge = () => {
-  const { connected, loading, error } = usePythonBackend();
+  const { 
+    isOnline, 
+    isChecking, 
+    errorMessage,
+    serverInfo,
+    lastChecked,
+    refreshStatus 
+  } = useBackendConnection();
 
-  const getStatusConfig = () => {
-    if (loading) {
+  // Determine visual configuration based on current state
+  const getDisplayConfig = () => {
+    if (isChecking && !lastChecked) {
+      // Initial connection check
       return {
-        variant: 'secondary' as const,
+        badgeVariant: 'secondary' as const,
         icon: <Loader2 className="h-3 w-3 animate-spin" />,
-        text: 'Checking',
-        tooltip: 'Connecting to Python backend...',
+        label: 'Connecting...',
+        description: 'Attempting to reach Flask backend server',
       };
     }
 
-    if (connected) {
+    if (isOnline) {
+      // Backend is accessible
       return {
-        variant: 'default' as const,
+        badgeVariant: 'default' as const,
         icon: <Server className="h-3 w-3" />,
-        text: 'Backend Online',
-        tooltip: 'Python FastAPI backend is connected',
+        label: 'Backend Online',
+        description: serverInfo 
+          ? `${serverInfo.service} v${serverInfo.version}` 
+          : 'Flask server connected',
       };
     }
 
+    // Backend unreachable
     return {
-      variant: 'destructive' as const,
+      badgeVariant: 'destructive' as const,
       icon: <AlertCircle className="h-3 w-3" />,
-      text: 'Backend Offline',
-      tooltip: error || 'Python backend is not available',
+      label: 'Backend Offline',
+      description: errorMessage || 'Flask server not responding',
     };
   };
 
-  const config = getStatusConfig();
+  const config = getDisplayConfig();
+
+  // Format last check time for display
+  const formatLastChecked = () => {
+    if (!lastChecked) return null;
+    return lastChecked.toLocaleTimeString();
+  };
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant={config.variant} className="flex items-center gap-1.5">
-            {config.icon}
-            <span className="text-xs">{config.text}</span>
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge 
+              variant={config.badgeVariant} 
+              className="flex items-center gap-1.5 cursor-help"
+            >
+              {config.icon}
+              <span className="text-xs">{config.label}</span>
+            </Badge>
+            
+            {/* Manual refresh button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={refreshStatus}
+              disabled={isChecking}
+            >
+              <RefreshCw className={`h-3 w-3 ${isChecking ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">{config.tooltip}</p>
-          {!connected && !loading && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Set VITE_PYTHON_API_URL in .env
-            </p>
-          )}
+        
+        <TooltipContent className="max-w-xs">
+          <div className="space-y-1">
+            <p className="text-xs font-medium">{config.description}</p>
+            
+            {lastChecked && (
+              <p className="text-xs text-muted-foreground">
+                Last checked: {formatLastChecked()}
+              </p>
+            )}
+            
+            {!isOnline && (
+              <div className="pt-1 border-t border-border mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Ensure Flask backend is running on port 8000.
+                  Check VITE_PYTHON_API_URL in environment.
+                </p>
+              </div>
+            )}
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
