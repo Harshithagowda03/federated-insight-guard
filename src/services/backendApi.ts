@@ -8,8 +8,11 @@
  * @course MCA Cybersecurity Project
  */
 
-// Base URL from environment variable, fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || 'http://localhost:8000';
+// Base URL from environment variable, fallback to localhost:5000 for Flask
+const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || 'http://localhost:5000';
+
+// Log the API URL for debugging
+console.log('[FedSecure] Backend API URL:', API_BASE_URL);
 
 // ============================================================
 // Type Definitions

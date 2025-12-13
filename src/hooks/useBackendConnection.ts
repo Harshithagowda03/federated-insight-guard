@@ -62,18 +62,28 @@ export function useBackendConnection(options: UseBackendConnectionOptions = {}) 
   const checkConnection = useCallback(async () => {
     setState(prev => ({ ...prev, isChecking: true }));
 
+    console.log('[FedSecure] Checking backend connection...');
+
     try {
       const healthData = await backendApi.checkHealth();
       
-      // Backend responded successfully
+      // Log successful response for debugging
+      console.log('[FedSecure] Backend health check SUCCESS:', healthData);
+      
+      // Backend responded successfully - check status field
+      const isBackendOnline = healthData.status === 'online' || healthData.status === 'healthy';
+      
       setState({
-        isOnline: true,
+        isOnline: isBackendOnline,
         isChecking: false,
         lastChecked: new Date(),
         serverInfo: healthData,
         errorMessage: null,
       });
     } catch (error) {
+      // Log error for debugging
+      console.error('[FedSecure] Backend health check FAILED:', error);
+      
       // Backend unreachable or returned error
       const message = error instanceof Error 
         ? error.message 

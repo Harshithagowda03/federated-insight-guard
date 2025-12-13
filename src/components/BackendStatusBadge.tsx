@@ -7,7 +7,6 @@
  * @author FedSecure AI Team
  */
 
-import { Badge } from '@/components/ui/badge';
 import { Server, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useBackendConnection } from '@/hooks/useBackendConnection';
 import { 
@@ -74,13 +73,16 @@ export const BackendStatusBadge = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2">
-            <Badge 
-              variant={config.badgeVariant} 
-              className="flex items-center gap-1.5 cursor-help"
+            <div 
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold cursor-help
+                ${config.badgeVariant === 'default' ? 'bg-primary text-primary-foreground' : ''}
+                ${config.badgeVariant === 'destructive' ? 'bg-destructive text-destructive-foreground' : ''}
+                ${config.badgeVariant === 'secondary' ? 'bg-secondary text-secondary-foreground' : ''}
+              `}
             >
               {config.icon}
-              <span className="text-xs">{config.label}</span>
-            </Badge>
+              <span>{config.label}</span>
+            </div>
             
             {/* Manual refresh button */}
             <Button
