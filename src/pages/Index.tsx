@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, LogOut, Radio, Loader2 } from "lucide-react";
+import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, Radio, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import FederatedLearning from "@/components/dashboard/FederatedLearning";
 import ThreatAnalytics from "@/components/dashboard/ThreatAnalytics";
@@ -60,27 +61,17 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {user && (
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  {user.email}
-                </span>
+              {user ? (
+                <UserProfileMenu onLogout={signOut} />
+              ) : (
+                <Button 
+                  onClick={() => navigate("/auth")}
+                  className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </Button>
               )}
-              <Button 
-                onClick={handleAuthAction}
-                className="gap-2 bg-gradient-primary hover:opacity-90 transition-all duration-300 glow-primary border-none"
-              >
-                {user ? (
-                  <>
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4" />
-                    Login
-                  </>
-                )}
-              </Button>
             </div>
           </div>
         </div>
