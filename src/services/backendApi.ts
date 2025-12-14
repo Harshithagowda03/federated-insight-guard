@@ -148,10 +148,24 @@ class BackendApiService {
 
   /**
    * Checks if backend server is running and accessible.
-   * Used for connection status indicator in UI.
+   * Uses /api/health for detailed status info.
    */
   async checkHealth(): Promise<HealthResponse> {
-    return this.makeRequest<HealthResponse>('/health');
+    const url = `${this.baseUrl}/api/health`;
+    console.log('[FedSecure] Health check request:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('[FedSecure] Health check response:', data);
+    return data;
   }
 
   /**
