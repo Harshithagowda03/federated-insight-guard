@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Activity, Database, Zap, FileUp, Target, LogIn, LogOut, Radio, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { BackendStatusBadge } from "@/components/BackendStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import FederatedLearning from "@/components/dashboard/FederatedLearning";
@@ -61,7 +60,6 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <BackendStatusBadge />
               {user && (
                 <span className="text-sm text-muted-foreground hidden sm:inline">
                   {user.email}
