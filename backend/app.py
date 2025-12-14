@@ -34,15 +34,21 @@ app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'fedsecure-dev-secret-cha
 
 # Enable CORS for frontend communication
 # Multiple origins for development flexibility
+# In production, restrict to specific domains
 allowed_origins = [
     'http://localhost:5173',
     'http://localhost:8080',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:8080',
     'https://lovable.dev',
-    'https://*.lovableproject.com'
+    'https://*.lovable.app',  # Lovable preview URLs
 ]
-CORS(app, origins=allowed_origins, supports_credentials=True)
+
+# Enable CORS - in development allow all origins for easier testing
+if os.getenv('FLASK_ENV') == 'development':
+    CORS(app, origins='*', supports_credentials=True)
+else:
+    CORS(app, origins=allowed_origins, supports_credentials=True)
 
 # Environment configuration
 app.config['ENV'] = os.getenv('FLASK_ENV', 'development')

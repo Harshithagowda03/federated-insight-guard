@@ -8,11 +8,12 @@
  * @course MCA Cybersecurity Project
  */
 
-// Base URL from environment variable, fallback to localhost:5000 for Flask
-const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || 'http://localhost:5000';
+// Backend API URL - use VITE_API_URL environment variable
+// Falls back to localhost:5000 where Flask server runs
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Log the API URL for debugging
-console.log('[FedSecure] Backend API URL:', API_BASE_URL);
+// Log for debugging connection issues
+console.log('[FedSecure] Backend API configured at:', API_BASE_URL);
 
 // ============================================================
 // Type Definitions
@@ -95,20 +96,32 @@ class BackendApiService {
 
   /**
    * Makes HTTP request to backend with error handling.
-   * Generic method used by all specific endpoint methods.
+   * Automatically includes auth token for protected endpoints.
    */
   private async makeRequest<T>(
     endpoint: string, 
-    options: RequestInit = {}
+    options: RequestInit = {},
+    requireAuth: boolean = false
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Build headers with optional auth token
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    // Add auth token if required or available
+    if (requireAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
     const config: RequestInit = {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     };
 
     const response = await fetch(url, config);
@@ -122,6 +135,18 @@ class BackendApiService {
   }
 
   /**
+   * Gets auth token from localStorage.
+   * Used for protected API endpoints.
+   */
+  private getAuthToken(): string | null {
+    try {
+      return localStorage.getItem('fedsecure_auth_token');
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Checks if backend server is running and accessible.
    * Used for connection status indicator in UI.
    */
@@ -132,51 +157,55 @@ class BackendApiService {
   /**
    * Retrieves aggregated system metrics including accuracy,
    * threat counts, and node statistics.
+   * Requires authentication.
    */
   async getMetrics(): Promise<SystemMetrics> {
-    return this.makeRequest<SystemMetrics>('/api/metrics');
+    return this.makeRequest<SystemMetrics>('/api/metrics', {}, true);
   }
 
   /**
    * Fetches list of recently detected threats.
-   * Supports pagination through limit parameter.
+   * Requires authentication.
    */
   async getThreats(limit: number = 10): Promise<ThreatListResponse> {
-    return this.makeRequest<ThreatListResponse>(`/api/threats?limit=${limit}`);
+    return this.makeRequest<ThreatListResponse>(`/api/threats?limit=${limit}`, {}, true);
   }
 
   /**
-   * Gets current federated learning training status
-   * including node information and progress.
+   * Gets current federated learning training status.
+   * Requires authentication.
    */
   async getFederatedStatus(): Promise<FederatedStatusResponse> {
-    return this.makeRequest<FederatedStatusResponse>('/api/federated/status');
+    return this.makeRequest<FederatedStatusResponse>('/api/federated/status', {}, true);
   }
 
   /**
    * Retrieves list of all federated learning nodes.
+   * Requires authentication.
    */
   async getNodes(): Promise<{ nodes: FederatedNode[]; online_count: number; total_count: number }> {
-    return this.makeRequest('/api/federated/nodes');
+    return this.makeRequest('/api/federated/nodes', {}, true);
   }
 
   /**
    * Initiates a new federated learning training session.
+   * Requires authentication.
    */
   async startTraining(maxRounds: number = 10): Promise<{ success: boolean; message: string; session?: TrainingState }> {
     return this.makeRequest('/api/federated/start', {
       method: 'POST',
       body: JSON.stringify({ max_rounds: maxRounds }),
-    });
+    }, true);
   }
 
   /**
    * Stops the current federated learning session.
+   * Requires authentication.
    */
   async stopTraining(): Promise<{ success: boolean; message: string; final_accuracy?: number }> {
     return this.makeRequest('/api/federated/stop', {
       method: 'POST',
-    });
+    }, true);
   }
 }
 
