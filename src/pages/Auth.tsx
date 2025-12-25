@@ -79,7 +79,7 @@ const Auth = () => {
         const { error } = await signUp(email, password);
         if (error) {
           let errorMessage = error.message;
-          if (error.message.includes("already registered")) {
+          if (error.message.includes("already registered") || error.message.includes("already been registered")) {
             errorMessage = "This email is already registered. Please login instead.";
           }
           toast({
@@ -90,8 +90,9 @@ const Auth = () => {
         } else {
           toast({
             title: "Signup Successful",
-            description: "Welcome to FedSecure AI!",
+            description: "Welcome to FedSecure AI! You are now logged in.",
           });
+          navigate("/");
         }
       }
     } catch (err) {
