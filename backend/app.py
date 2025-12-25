@@ -29,8 +29,33 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Secret key for JWT signing - use environment variable in production
-app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'fedsecure-dev-secret-change-in-production')
+# Environment configuration - defaults to production for safety
+app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+app.config['DEBUG'] = app.config['ENV'] == 'development'
+
+# Secret key for JWT signing - MUST be set via environment variable
+# In production, the application will fail to start without a proper secret
+jwt_secret = os.getenv('JWT_SECRET_KEY')
+
+if app.config['ENV'] == 'production':
+    if not jwt_secret:
+        raise RuntimeError(
+            "CRITICAL: JWT_SECRET_KEY environment variable must be set in production. "
+            "Generate a secure key with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    app.config['SECRET_KEY'] = jwt_secret
+else:
+    # Development mode: use env var if set, otherwise use a dev-only secret
+    # This secret is clearly marked and only works in development
+    if jwt_secret:
+        app.config['SECRET_KEY'] = jwt_secret
+    else:
+        import warnings
+        warnings.warn(
+            "Using development JWT secret. Set JWT_SECRET_KEY environment variable for production.",
+            UserWarning
+        )
+        app.config['SECRET_KEY'] = 'DEV-ONLY-NOT-FOR-PRODUCTION-' + os.urandom(16).hex()
 
 # Enable CORS for frontend communication
 # Multiple origins for development flexibility
@@ -44,15 +69,14 @@ allowed_origins = [
     'https://*.lovable.app',  # Lovable preview URLs
 ]
 
-# Enable CORS - in development allow all origins for easier testing
-if os.getenv('FLASK_ENV') == 'development':
+# CORS configuration - always use explicit origins in production
+if app.config['ENV'] == 'development':
+    # In development, allow all origins for easier testing but log a warning
+    import warnings
+    warnings.warn("CORS is configured to allow all origins in development mode.", UserWarning)
     CORS(app, origins='*', supports_credentials=True)
 else:
     CORS(app, origins=allowed_origins, supports_credentials=True)
-
-# Environment configuration
-app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
-app.config['DEBUG'] = app.config['ENV'] == 'development'
 
 # JWT token expiry duration
 TOKEN_EXPIRY_HOURS = 24
