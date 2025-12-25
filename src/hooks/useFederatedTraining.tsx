@@ -51,12 +51,6 @@ export const useFederatedTraining = () => {
         return false;
       }
 
-      const { data, error } = await supabase.functions.invoke('federated-training', {
-        body: {},
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Check for action=health via query params workaround
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/federated-training?action=health`,
         {
