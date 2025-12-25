@@ -91,7 +91,7 @@ export const UserProfileMenu = ({ onLogout }: UserProfileMenuProps) => {
             </Avatar>
             <div className="flex flex-col">
               <span className="font-medium text-foreground">
-                {user.name || user.email?.split('@')[0]}
+                {user.user_metadata?.name || user.email?.split('@')[0]}
               </span>
               <span className="text-xs text-muted-foreground truncate max-w-40">
                 {user.email}
